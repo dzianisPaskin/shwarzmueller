@@ -1,5 +1,6 @@
-import { Fragment } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import useSWR from "swr";
 
 import { getFilteredEvents } from "../../helpers/api-util";
 import EventList from "../../components/events/event-list";
@@ -8,19 +9,49 @@ import Button from "../../components/ui/button";
 import ErrorAlert from "../../components/ui/error-alert";
 
 function FilteredEvents(props) {
+  const [loadedEvents, setLoadedEvents] = useState([]);
   const router = useRouter();
 
-  // const filteredData = router.query.slug;
+  const filteredData = router.query.slug;
 
-  // if (!filteredData) return <p className="center">Loading...</p>;
+  const fetcher = (url) => fetch(url).then((res) => res.json());
 
-  // const filteredYear = filteredData[0];
-  // const filteredMonth = filteredData[1];
+  const { data, error } = useSWR(
+    "https://nextjs-schwarzmuieller-default-rtdb.europe-west1.firebasedatabase.app/events.json",
+    fetcher
+  );
 
-  // const numYear = +filteredYear;
-  // const numMonth = +filteredMonth;
+  useEffect(() => {
+    if (data) {
+      const events = [];
 
-  if (props.hasError)
+      for (const key in data) {
+        events.push({
+          id: key,
+          ...data[key],
+        });
+      }
+      setLoadedEvents(events);
+    }
+  }, [data]);
+
+  if (!loadedEvents) return <p className="center">Loading...</p>;
+
+  const filteredYear = filteredData[0];
+  const filteredMonth = filteredData[1];
+
+  const numYear = +filteredYear;
+  const numMonth = +filteredMonth;
+
+  if (
+    isNaN(numMonth) ||
+    isNaN(numYear) ||
+    numYear > 2030 ||
+    numYear < 2021 ||
+    numMonth < 1 ||
+    numMonth > 12 ||
+    error
+  )
     return (
       <Fragment>
         <ErrorAlert>
@@ -32,7 +63,13 @@ function FilteredEvents(props) {
       </Fragment>
     );
 
-  const filteredEvents = props.events;
+  const filteredEvents = loadedEvents.filter((event) => {
+    const eventDate = new Date(event.date);
+    return (
+      eventDate.getFullYear() === numYear &&
+      eventDate.getMonth() === numMonth - 1
+    );
+  });
 
   if (!filteredEvents || !filteredEvents.length === 0)
     return (
@@ -46,7 +83,8 @@ function FilteredEvents(props) {
       </Fragment>
     );
 
-  const date = new Date(props.date.numYear, props.date.numMonth - 1);
+  const date = new Date(numYear, numMonth - 1);
+
   return (
     <Fragment>
       <ResultsTitle date={date} />
@@ -55,43 +93,43 @@ function FilteredEvents(props) {
   );
 }
 
-export const getServerSideProps = async (context) => {
-  const { params } = context;
+// export const getServerSideProps = async (context) => {
+//   const { params } = context;
 
-  const filterData = params.slug;
+//   const filterData = params.slug;
 
-  const filteredYear = filterData[0];
-  const filteredMonth = filterData[1];
+//   const filteredYear = filterData[0];
+//   const filteredMonth = filterData[1];
 
-  const numYear = +filteredYear;
-  const numMonth = +filteredMonth;
+//   const numYear = +filteredYear;
+//   const numMonth = +filteredMonth;
 
-  if (
-    isNaN(numMonth) ||
-    isNaN(numYear) ||
-    numYear > 2030 ||
-    numYear < 2021 ||
-    numMonth < 1 ||
-    numMonth > 12
-  )
-    return {
-      props: { hasError: true },
-      // notFound: true,
-    };
-  const filteredEvents = await getFilteredEvents({
-    year: numYear,
-    month: numMonth,
-  });
+//   if (
+//     isNaN(numMonth) ||
+//     isNaN(numYear) ||
+//     numYear > 2030 ||
+//     numYear < 2021 ||
+//     numMonth < 1 ||
+//     numMonth > 12
+//   )
+//     return {
+//       props: { hasError: true },
+//       // notFound: true,
+//     };
+//   const filteredEvents = await getFilteredEvents({
+//     year: numYear,
+//     month: numMonth,
+//   });
 
-  return {
-    props: {
-      events: filteredEvents,
-      date: {
-        year: numYear,
-        month: numMonth,
-      },
-    },
-  };
-};
+//   return {
+//     props: {
+//       events: filteredEvents,
+//       date: {
+//         year: numYear,
+//         month: numMonth,
+//       },
+//     },
+//   };
+// };
 
 export default FilteredEvents;
