@@ -7,7 +7,7 @@ import EventsSearch from "../../components/events/events-search";
 
 function AllEventsPage(props) {
   const router = useRouter();
-  const { events } = props.events;
+  const { events } = props;
 
   function findEventsHandler(year, month) {
     const fullPath = `/events/${year}/${month}`;
