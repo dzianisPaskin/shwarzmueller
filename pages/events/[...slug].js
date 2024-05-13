@@ -2,11 +2,11 @@ import { Fragment, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import useSWR from "swr";
 
-import { getFilteredEvents } from "../../helpers/api-util";
 import EventList from "../../components/events/event-list";
 import ResultsTitle from "../../components/events/results-title";
 import Button from "../../components/ui/button";
 import ErrorAlert from "../../components/ui/error-alert";
+import Head from "next/head";
 
 function FilteredEvents(props) {
   const [loadedEvents, setLoadedEvents] = useState([]);
@@ -35,7 +35,20 @@ function FilteredEvents(props) {
     }
   }, [data]);
 
-  if (!loadedEvents) return <p className="center">Loading...</p>;
+  let pageHeadData = (
+    <Head>
+      <title>Filtered Events</title>
+      <meta name="description" content="A list of filtered events." />
+    </Head>
+  );
+
+  if (!loadedEvents)
+    return (
+      <Fragment>
+        {pageHeadData}
+        <p className="center">Loading...</p>
+      </Fragment>
+    );
 
   const filteredYear = filteredData[0];
   const filteredMonth = filteredData[1];
@@ -43,6 +56,15 @@ function FilteredEvents(props) {
   const numYear = +filteredYear;
   const numMonth = +filteredMonth;
 
+  pageHeadData = (
+    <Head>
+      <title>Filtered Events</title>
+      <meta
+        name="description"
+        content={`All events for ${numMonth}/${numYear}.`}
+      />
+    </Head>
+  );
   if (
     isNaN(numMonth) ||
     isNaN(numYear) ||
@@ -54,6 +76,7 @@ function FilteredEvents(props) {
   )
     return (
       <Fragment>
+        {pageHeadData}
         <ErrorAlert>
           <p>Invalid filter. Please adjust your values!</p>
         </ErrorAlert>
@@ -74,6 +97,7 @@ function FilteredEvents(props) {
   if (!filteredEvents || !filteredEvents.length === 0)
     return (
       <Fragment>
+        {pageHeadData}
         <ErrorAlert>
           <p>No events found for the chosen filter!</p>
         </ErrorAlert>
